@@ -506,7 +506,7 @@ void HAL_UART_TxCpltCallback  ( UART_HandleTypeDef *  huart )
 {	//发送完成回调函数
 	//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_0);
 }
-
+float fTemp = 0.0f;
 void HAL_UART_RxCpltCallback  ( UART_HandleTypeDef *  huart ) 
 {	
 	static uint8_t overing = 0;
@@ -520,18 +520,21 @@ void HAL_UART_RxCpltCallback  ( UART_HandleTypeDef *  huart )
 		//HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin);
 		RxData[Index]=arr; //接收中断发生，存储接收值
 		Index++;
-		if( Index >= 2 )
+		//if( Index >= 2 )
+		if( RxData[Index -1] == '\r' || RxData[Index -1] == '\n' || Index >=100 )
 		{
+			
 			//HAL_UART_Transmit_IT(huart,RxData,Index-1);//将接收到的数据发送回pc
 			Index = 0;//完成接收后，重新清0，开启下次的接收
 
 			temp = ( RxData[1] << 8 ) | RxData[0];
 			f = temp / ADC_REF;
-			//printf("f = %4.2f \r\n" , f );
+			fTemp = f;
 			if( pMyPID->controller.update(pMyPID,f) == RT_EOK ) //成功读取调用更新
 			{
 				pwm_set_update(pMyPID->controller.output);
 			}
+			
 		}
 		ble_connect_flag = 1; //串口接收正常代表蓝牙连接正常
 		HAL_UART_Receive_IT(huart, &arr, 1);//再次开启usart1接收中断
@@ -589,6 +592,7 @@ void StartDefaultTask(void const * argument)
 		  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin,GPIO_PIN_RESET); //亮LED
 		  
 	  }
+	  printf("fTemp = %4.2f \r\n" , fTemp );
 	 
   }
   /* USER CODE END 5 */ 
