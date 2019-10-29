@@ -11,7 +11,7 @@
 #ifndef __INC_PID_CONTROLLER_H__
 #define __INC_PID_CONTROLLER_H__
 
-#include <rtthread.h>
+//#include <rtthread.h>
 #include "controller.h"
 
 typedef struct inc_pid_controller *inc_pid_controller_t;

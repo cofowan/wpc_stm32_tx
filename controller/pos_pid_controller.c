@@ -12,7 +12,7 @@
 
 #define DBG_SECTION_NAME  "pos_pid_controller"
 #define DBG_LEVEL         DBG_LOG
-#include <rtdbg.h>
+//#include <rtdbg.h>
 
 static rt_err_t pos_pid_controller_reset(void *pid)
 {
@@ -28,7 +28,7 @@ static rt_err_t pos_pid_controller_reset(void *pid)
 
 static rt_err_t pos_pid_controller_destroy(void *pid)
 {
-    rt_free(pid);
+    free(pid);
     return RT_EOK;
 }
 
@@ -58,12 +58,14 @@ static rt_err_t pos_pid_controller_update(void *pid, float current_point)
 {
     pos_pid_controller_t pos_pid = (pos_pid_controller_t)pid;
 
-    if((rt_tick_get() - pos_pid->last_time) < rt_tick_from_millisecond(pos_pid->controller.sample_time))
-    {
-        LOG_D("PID waiting ... ");
+    //if((rt_tick_get() - pos_pid->last_time) < rt_tick_from_millisecond(pos_pid->controller.sample_time))
+    if((xTaskGetTickCount() - pos_pid->last_time) < pdMS_TO_TICKS(pos_pid->controller.sample_time))
+	{
+        //LOG_D("PID waiting ... ");
         return RT_EBUSY;
     }
-    pos_pid->last_time = rt_tick_get();
+    //pos_pid->last_time = rt_tick_get();
+	pos_pid->last_time = xTaskGetTickCount();
 
     pos_pid->error = pos_pid->controller.target - current_point;
 
@@ -135,7 +137,7 @@ pos_pid_controller_t pos_pid_controller_create(float kp, float ki, float kd, rt_
 
 rt_err_t pos_pid_controller_set_kp(pos_pid_controller_t pid, float kp)
 {
-    RT_ASSERT(pid != RT_NULL);
+    configASSERT(pid != RT_NULL);
 
     pid->kp = kp;
 
@@ -144,7 +146,7 @@ rt_err_t pos_pid_controller_set_kp(pos_pid_controller_t pid, float kp)
 
 rt_err_t pos_pid_controller_set_ki(pos_pid_controller_t pid, float ki)
 {
-    RT_ASSERT(pid != RT_NULL);
+    configASSERT(pid != RT_NULL);
 
     pid->ki = ki;
 
@@ -153,7 +155,7 @@ rt_err_t pos_pid_controller_set_ki(pos_pid_controller_t pid, float ki)
 
 rt_err_t pos_pid_controller_set_kd(pos_pid_controller_t pid, float kd)
 {
-    RT_ASSERT(pid != RT_NULL);
+    configASSERT(pid != RT_NULL);
 
     pid->kd = kd;
     

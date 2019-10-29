@@ -11,7 +11,7 @@
 #ifndef __POS_PID_CONTROLLER_H__
 #define __POS_PID_CONTROLLER_H__
 
-#include <rtthread.h>
+//#include <rtthread.h>
 #include "controller.h"
 
 typedef struct pos_pid_controller *pos_pid_controller_t;
