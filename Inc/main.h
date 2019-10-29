@@ -55,6 +55,12 @@ typedef struct
 #define TIM1_PERIOD_STEP (1UL)
 #define TIM1_PERIOD_85KHz (753UL) //85KHz 640/0.85 = 753
 
+#define RES_DWON 	( 30.0f )
+#define RES_UP 		( 1000.0f )
+#define RES_RATE	( ( RES_DWON / ( RES_DWON + RES_UP ) ) )
+#define REF_VOL		( 3.30f )
+#define ADC_REF		( ( ( RES_RATE * 4096 ) / REF_VOL ) )
+
 typedef enum
 {
 	CUR_NULL,
@@ -107,7 +113,7 @@ __STATIC_INLINE void pwm_set_88KHz(void);
 __STATIC_INLINE void pwm_set_shutdown(void);
 __STATIC_INLINE  uint32_t pwm_get_peroid(void);
 __STATIC_INLINE  float pwm_get_freq(void);
-
+__STATIC_INLINE void pwm_set_update(uint16_t data);
 __STATIC_INLINE void pwm_set_up(void)
 {
 	if(htim1.State == HAL_TIM_STATE_READY)
@@ -188,6 +194,16 @@ __STATIC_INLINE void pwm_set_83KHz(void)
 		htim1.Instance->CCR1 = htim1.Instance->ARR / 2;
 		
 		
+	}
+}
+__STATIC_INLINE void pwm_set_update(uint16_t data)
+{
+	if(htim1.State == HAL_TIM_STATE_READY)
+	 {
+		
+		htim1.Instance->ARR = data;
+		htim1.Instance->CCR1 = htim1.Instance->ARR / 2;
+
 	}
 }
 __STATIC_INLINE void pwm_set_88KHz(void)

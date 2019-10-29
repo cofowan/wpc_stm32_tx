@@ -50,7 +50,7 @@ UART_HandleTypeDef huart3;
 
 osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
-
+#include "inc_pid_controller.h"
 typedef enum
 {
 	DOT_NOTHING,
@@ -197,6 +197,7 @@ uint8_t RxData[100]={0};
 uint8_t Index = 0;
 uint8_t arr = 0;
 uint8_t uart2_arr = 0;
+inc_pid_controller_t pMyPID = NULL;
 /* USER CODE END 0 */
 
 /**
@@ -237,6 +238,9 @@ int main(void)
   //HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
   HAL_UART_Receive_IT(&huart3,(uint8_t*)&arr,1);
  //  HAL_UART_Receive_IT(&huart2,(uint8_t*)&uart2_arr,1);
+ pMyPID = inc_pid_controller_create( 0.2f, 0.1f, 0, 50 );
+ pMyPID->controller.enable = 1;
+ pMyPID->controller.target = 65.0f;
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -505,6 +509,8 @@ void HAL_UART_RxCpltCallback  ( UART_HandleTypeDef *  huart )
 	static uint8_t overing = 0;
 	static uint8_t was_into_MAXPOWER = 0;
 	static uint8_t last_vol_status = 0;
+	uint16_t temp;
+	float f;
 	//接收完成中断回调函数
 	if(huart == &huart3)
 	{ //实测接收快时３０ｍｓ，慢时６５ｍｓ
@@ -515,16 +521,14 @@ void HAL_UART_RxCpltCallback  ( UART_HandleTypeDef *  huart )
 		{
 			//HAL_UART_Transmit_IT(huart,RxData,Index-1);//将接收到的数据发送回pc
 			Index = 0;//完成接收后，重新清0，开启下次的接收
-//			typedef union{
-//				uint8_t u8[2];
-//				uint16_t u16;
-//			}t;
-//			t t1;
-//			t1.u8[0] = RxData[0];
-//			t1.u8[1] = RxData[1];
-//			printf("RX=%d\r\n",t1.u16);
-			uint16_t temp = ( RxData[1] << 8 ) | RxData[0];
-			printf("RXDATA = %d \r\n" , temp );
+
+			temp = ( RxData[1] << 8 ) | RxData[0];
+			f = temp / ADC_REF;
+			//printf("f = %4.2f \r\n" , f );
+			if( pMyPID->controller.update(pMyPID,f) == RT_EOK ) //成功读取调用更新
+			{
+				pwm_set_update(pMyPID->controller.output);
+			}
 		}
 		ble_connect_flag = 1; //串口接收正常代表蓝牙连接正常
 		HAL_UART_Receive_IT(huart, &arr, 1);//再次开启usart1接收中断
