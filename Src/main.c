@@ -238,9 +238,12 @@ int main(void)
   //HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
   HAL_UART_Receive_IT(&huart3,(uint8_t*)&arr,1);
  //  HAL_UART_Receive_IT(&huart2,(uint8_t*)&uart2_arr,1);
- pMyPID = inc_pid_controller_create( 0.2f, 0.1f, 0, 50 );
- pMyPID->controller.enable = 1;
- pMyPID->controller.target = 65.0f;
+	//初始化pid
+	pMyPID = inc_pid_controller_create( 0.2f, 0.05f, 0, 50 );
+	pMyPID->controller.target = 65.0f;
+	pMyPID->maximum = TIM1_PERIOD_MIN;//TIM1_PERIOD_MIN (768UL) --> 83.3KHz 640/0.833 = 768,作用：加大功率！
+	pMyPID->minimum = TIM1_PERIOD_MAX;//TIM1_PERIOD_MAX (727UL) //88KHz 640/0.88 = 727，作用，减小功率！
+	pMyPID->controller.enable = 1;
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
