@@ -89,6 +89,17 @@ typedef struct
 	uint8_t current		: 3;
 	
 }SignalData;
+typedef struct
+{
+	uint16_t vol;
+	uint16_t cur;
+}data_t;
+typedef struct
+{
+	data_t data;
+	uint16_t crc;
+	char	 ch;
+}vol_cur_t;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

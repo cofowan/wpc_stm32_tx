@@ -507,12 +507,12 @@ void HAL_UART_TxCpltCallback  ( UART_HandleTypeDef *  huart )
 	//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_0);
 }
 float fTemp = 0.0f;
+uint16_t vol_data=0;
+uint16_t cur_data=0;
 void HAL_UART_RxCpltCallback  ( UART_HandleTypeDef *  huart ) 
 {	
-	static uint8_t overing = 0;
-	static uint8_t was_into_MAXPOWER = 0;
-	static uint8_t last_vol_status = 0;
-	uint16_t temp;
+
+	vol_cur_t *pData;
 	float f;
 	//接收完成中断回调函数
 	if(huart == &huart3)
@@ -520,21 +520,28 @@ void HAL_UART_RxCpltCallback  ( UART_HandleTypeDef *  huart )
 		//HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin);
 		RxData[Index]=arr; //接收中断发生，存储接收值
 		Index++;
-		//if( Index >= 2 )
-		if( RxData[Index -1] == '\r' || RxData[Index -1] == '\n' || Index >=100 )
+		
+		if( RxData[Index -1] == '\r' || RxData[Index -1] == '\n' || Index >=20 )
 		{
-			
-			//HAL_UART_Transmit_IT(huart,RxData,Index-1);//将接收到的数据发送回pc
-			Index = 0;//完成接收后，重新清0，开启下次的接收
-
-			temp = ( RxData[1] << 8 ) | RxData[0];
-			f = temp / ADC_REF;
-			fTemp = f;
-			if( pMyPID->controller.update(pMyPID,f) == RT_EOK ) //成功读取调用更新
+		
+			if( Index == sizeof(vol_cur_t) ) //从机发过来的数据格式
 			{
-				pwm_set_update(pMyPID->controller.output);
-			}
-			
+				/* 
+				特别注意：RxData在接收机串口发送到ble的数据流还正确，而给BLE rx端的串口接收到后，
+				就变成最尾的一个字节跑到最前面来了，原因有待进一步查明，
+				为了能正确读取数据流，这里特意加1！数据即能正确读取！！
+				*/
+				pData = (vol_cur_t *)(RxData + 1);
+				f = pData->data.vol / ADC_REF;
+				fTemp = f;
+				if( pMyPID->controller.update(pMyPID,f) == RT_EOK ) //成功读取调用更新
+				{
+					pwm_set_update(pMyPID->controller.output);
+				}
+				vol_data = pData->data.vol;
+				cur_data = pData->data.cur;
+			}	
+			Index = 0;//完成接收后，重新清0，开启下次的接收
 		}
 		ble_connect_flag = 1; //串口接收正常代表蓝牙连接正常
 		HAL_UART_Receive_IT(huart, &arr, 1);//再次开启usart1接收中断
@@ -581,6 +588,7 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
 	  osDelay(150);
+	  
 	  if(ble_connect_flag != 1) //若蓝牙连接不正常
 	  {
 		  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin,GPIO_PIN_SET); //关闭LED
@@ -593,7 +601,8 @@ void StartDefaultTask(void const * argument)
 		  
 	  }
 	  printf("fTemp = %4.2f \r\n" , fTemp );
-	 
+	 printf("vol_data= 0x%x \r\n" , vol_data );
+	  printf("cur_data = 0x%x \r\n" , cur_data );
   }
   /* USER CODE END 5 */ 
 }
