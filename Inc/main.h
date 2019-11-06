@@ -258,7 +258,13 @@ __STATIC_INLINE  float pwm_get_freq(void)
 #define LED_BLUE_Pin GPIO_PIN_1
 #define LED_BLUE_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-
+//#define MYP			( 0.30f )
+//#define MYI			( 0.20f )
+//#define MYD			( 0.00f )
+#define MYP			( 0.35f )
+#define MYI			( 0.40f )
+#define MYD			( 0.00f )
+#define TARGETVOL   ( 62.0f )
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -198,6 +198,10 @@ uint8_t Index = 0;
 uint8_t arr = 0;
 uint8_t uart2_arr = 0;
 inc_pid_controller_t pMyPID = NULL;
+#include "FreeRTOS_CLI.h"
+#include "serial.h"
+extern void vRegisterSampleCLICommands( void );
+extern void vUARTCommandConsoleStart( uint16_t usStackSize, UBaseType_t uxPriority );
 /* USER CODE END 0 */
 
 /**
@@ -207,7 +211,7 @@ inc_pid_controller_t pMyPID = NULL;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+vRegisterSampleCLICommands();
   /* USER CODE END 1 */
   
 
@@ -233,17 +237,24 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
- 
-  //HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  //HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
+
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
   HAL_UART_Receive_IT(&huart3,(uint8_t*)&arr,1);
  //  HAL_UART_Receive_IT(&huart2,(uint8_t*)&uart2_arr,1);
 	//初始化pid
-	pMyPID = inc_pid_controller_create( 0.2f, 0.05f, 0, 50 );
-	pMyPID->controller.target = 65.0f;
+	//pMyPID = inc_pid_controller_create( 0.6f, 0.1f, 0, 20 );
+	pMyPID = inc_pid_controller_create( MYP, MYI, MYD, 30 );
+	pMyPID->controller.target = TARGETVOL;
 	pMyPID->maximum = TIM1_PERIOD_MIN;//TIM1_PERIOD_MIN (768UL) --> 83.3KHz 640/0.833 = 768,作用：加大功率！
 	pMyPID->minimum = TIM1_PERIOD_MAX;//TIM1_PERIOD_MAX (727UL) //88KHz 640/0.88 = 727，作用，减小功率！
 	pMyPID->controller.enable = 1;
+	
+	
+	
+	
+	//xSerialPortInitMinimal(ser115200,100);
+	//printf("yes\r\n");
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -268,6 +279,8 @@ int main(void)
   /* definition and creation of defaultTask */
   osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+
+//vUARTCommandConsoleStart( 1024, 5 );
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -600,9 +613,9 @@ void StartDefaultTask(void const * argument)
 		  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin,GPIO_PIN_RESET); //亮LED
 		  
 	  }
-	  printf("fTemp = %4.2f \r\n" , fTemp );
-	 printf("vol_data= 0x%x \r\n" , vol_data );
-	  printf("cur_data = 0x%x \r\n" , cur_data );
+	 // printf("fTemp = %4.2f \r\n" , fTemp );
+	 //printf("vol_data= 0x%x \r\n" , vol_data );
+	//  printf("cur_data = 0x%x \r\n" , cur_data );
   }
   /* USER CODE END 5 */ 
 }

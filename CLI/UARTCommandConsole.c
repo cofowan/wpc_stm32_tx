@@ -91,7 +91,7 @@ void vUARTCommandConsoleStart( uint16_t usStackSize, UBaseType_t uxPriority )
 	/* Create the semaphore used to access the UART Tx. */
 	xTxMutex = xSemaphoreCreateMutex();
 	configASSERT( xTxMutex );
-
+	
 	/* Create that task that handles the console itself. */
 	xTaskCreate( 	prvUARTCommandConsoleTask,	/* The task that implements the command console. */
 					"CLI",						/* Text name assigned to the task.  This is just to assist debugging.  The kernel does not use this name itself. */
@@ -123,7 +123,7 @@ xComPortHandle xPort;
 
 	/* Send the welcome message. */
 	vSerialPutString( xPort, ( signed char * ) pcWelcomeMessage, ( unsigned short ) strlen( pcWelcomeMessage ) );
-
+//printf("hello");//到了这里就无法执行了！！！！
 	for( ;; )
 	{
 		/* Wait for the next character.  The while loop is used in case
