@@ -200,8 +200,8 @@ uint8_t uart2_arr = 0;
 inc_pid_controller_t pMyPID = NULL;
 #include "FreeRTOS_CLI.h"
 #include "serial.h"
-extern void vRegisterSampleCLICommands( void );
-extern void vUARTCommandConsoleStart( uint16_t usStackSize, UBaseType_t uxPriority );
+vol_cur_t *pData = NULL;
+
 /* USER CODE END 0 */
 
 /**
@@ -211,7 +211,7 @@ extern void vUARTCommandConsoleStart( uint16_t usStackSize, UBaseType_t uxPriori
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-vRegisterSampleCLICommands();
+
   /* USER CODE END 1 */
   
 
@@ -241,7 +241,7 @@ vRegisterSampleCLICommands();
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_TIMEx_PWMN_Start(&htim1, TIM_CHANNEL_1);
   HAL_UART_Receive_IT(&huart3,(uint8_t*)&arr,1);
- //  HAL_UART_Receive_IT(&huart2,(uint8_t*)&uart2_arr,1);
+  HAL_UART_Receive_IT(&huart2,(uint8_t*)&uart2_arr,1);
 	//初始化pid
 	//pMyPID = inc_pid_controller_create( 0.6f, 0.1f, 0, 20 );
 	pMyPID = inc_pid_controller_create( MYP, MYI, MYD, 30 );
@@ -251,10 +251,6 @@ vRegisterSampleCLICommands();
 	pMyPID->controller.enable = 1;
 	
 	
-	
-	
-	//xSerialPortInitMinimal(ser115200,100);
-	//printf("yes\r\n");
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -519,14 +515,11 @@ void HAL_UART_TxCpltCallback  ( UART_HandleTypeDef *  huart )
 {	//发送完成回调函数
 	//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_0);
 }
-float fTemp = 0.0f;
-uint16_t vol_data=0;
-uint16_t cur_data=0;
+
 void HAL_UART_RxCpltCallback  ( UART_HandleTypeDef *  huart ) 
 {	
-
-	vol_cur_t *pData;
-	float f;
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	
 	//接收完成中断回调函数
 	if(huart == &huart3)
 	{ //实测接收快时３０ｍｓ，慢时６５ｍｓ
@@ -545,14 +538,10 @@ void HAL_UART_RxCpltCallback  ( UART_HandleTypeDef *  huart )
 				为了能正确读取数据流，这里特意加1！数据即能正确读取！！
 				*/
 				pData = (vol_cur_t *)(RxData + 1);
-				f = pData->data.vol / ADC_REF;
-				fTemp = f;
-				if( pMyPID->controller.update(pMyPID,f) == RT_EOK ) //成功读取调用更新
-				{
-					pwm_set_update(pMyPID->controller.output);
-				}
-				vol_data = pData->data.vol;
-				cur_data = pData->data.cur;
+				
+				vTaskNotifyGiveFromISR( defaultTaskHandle, &xHigherPriorityTaskWoken );
+				portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+			
 			}	
 			Index = 0;//完成接收后，重新清0，开启下次的接收
 		}
@@ -595,27 +584,45 @@ void StartDefaultTask(void const * argument)
     
 
   /* USER CODE BEGIN 5 */
+	uint32_t val = 0;
+	const TickType_t xPeriod = pdMS_TO_TICKS( 75 );
+	float f = 0.0;
 	vTaskDelay(500); //延时500ms才打开pwm
 	pwm_set_start();
+	
   /* Infinite loop */
   for(;;)
   {
-	  osDelay(150);
+	
+	  val = ulTaskNotifyTake( pdFALSE, xPeriod );
+	  if(val == 1) //正确原因的解除block;
+	  {
+		  if( pData != NULL )
+		  {
+				f = pData->data.vol / ADC_REF;
+				if( pMyPID->controller.update(pMyPID,f) == RT_EOK ) //成功读取调用更新
+				{
+					pwm_set_update(pMyPID->controller.output);
+				}
+				pData = NULL;
+		 }
+	  }
+	  else //时间溢出
+	  {
+		  if(ble_connect_flag != 1) //若蓝牙连接不正常
+		  {
+			  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin,GPIO_PIN_SET); //关闭LED
+			  pwm_set_standby(); //蓝牙若连接不正常，PWM设为88KHz
+		  }
+		  else //若蓝牙连接正常
+		  {
+			  ble_connect_flag = 0;
+			  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin,GPIO_PIN_RESET); //亮LED
+			  
+		  }
+	  }
 	  
-	  if(ble_connect_flag != 1) //若蓝牙连接不正常
-	  {
-		  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin,GPIO_PIN_SET); //关闭LED
-		  pwm_set_standby(); //蓝牙若连接不正常，PWM设为88KHz
-	  }
-	  else //若蓝牙连接正常
-	  {
-		  ble_connect_flag = 0;
-		  HAL_GPIO_WritePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin,GPIO_PIN_RESET); //亮LED
-		  
-	  }
-	 // printf("fTemp = %4.2f \r\n" , fTemp );
-	 //printf("vol_data= 0x%x \r\n" , vol_data );
-	//  printf("cur_data = 0x%x \r\n" , cur_data );
+	 
   }
   /* USER CODE END 5 */ 
 }

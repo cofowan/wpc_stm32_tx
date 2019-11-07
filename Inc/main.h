@@ -54,6 +54,7 @@ typedef struct
 #define TIM1_PERIOD_MAX (727UL) //88KHz 640/0.88 = 727
 #define TIM1_PERIOD_STEP (1UL)
 #define TIM1_PERIOD_85KHz (753UL) //85KHz 640/0.85 = 753
+#define TIM1_PERIOD_84KHz (761UL) //84KHz 640/0.84 = 761
 
 #define RES_DWON 	( 30.0f )
 #define RES_UP 		( 1000.0f )
@@ -93,6 +94,7 @@ typedef struct
 {
 	uint16_t vol;
 	uint16_t cur;
+	uint16_t overload;
 }data_t;
 typedef struct
 {
@@ -119,6 +121,7 @@ __STATIC_INLINE void pwm_set_down(void);
 __STATIC_INLINE void pwm_set_5x_down(void);
 __STATIC_INLINE void pwm_set_standby(void);
 __STATIC_INLINE void pwm_set_85KHz(void);
+__STATIC_INLINE void pwm_set_84KHz(void);
 __STATIC_INLINE void pwm_set_83KHz(void);
 __STATIC_INLINE void pwm_set_88KHz(void);
 __STATIC_INLINE void pwm_set_shutdown(void);
@@ -191,6 +194,17 @@ __STATIC_INLINE void pwm_set_85KHz(void)
 	 {
 		
 		htim1.Instance->ARR = TIM1_PERIOD_85KHz;
+		htim1.Instance->CCR1 = htim1.Instance->ARR / 2;
+		
+		
+	}
+}
+__STATIC_INLINE void pwm_set_84KHz(void)
+{
+	if(htim1.State == HAL_TIM_STATE_READY)
+	 {
+		
+		htim1.Instance->ARR = TIM1_PERIOD_84KHz;
 		htim1.Instance->CCR1 = htim1.Instance->ARR / 2;
 		
 		
