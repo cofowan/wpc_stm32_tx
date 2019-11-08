@@ -1,17 +1,19 @@
 #include "pwm_ctr.h"
 #include "stdio.h"
-const float array[][4] = 
+const float array[][6] = 
 {
-	{ 0.175, 0.125, 0.0, 50.0 }, //@2.5A 50V 
-	{ 0.235, 0.240, 0.0, 63.0 }, //@3.5A 63V
-	{ 0.045, 0.025, 0.0, 80.0 }, //@4.5A 80V 5A sure overload!
+	{ 0.175, 0.125, 0.0, 50.0  , TIM1_PERIOD_MAX,       TIM1_PERIOD_85KHz    }, //@2.5A 50V 
+	{ 0.235, 0.240, 0.0, 63.0  , TIM1_PERIOD_85KHz + 2, TIM1_PERIOD_MIN - 2  }, //@3.5A 63V
+	{ 0.045, 0.025, 0.0, 100.0 , TIM1_PERIOD_85KHz + 13, TIM1_PERIOD_MIN + 2  }, //@4.5A 80V 5A sure overload!
 };
-#define PID_P_INDEX 	0
-#define PID_I_INDEX 	1
-#define PID_D_INDEX 	2
-#define PID_VOL_INDEX 	3
+#define PID_P_INDEX 			0
+#define PID_I_INDEX 			1
+#define PID_D_INDEX 			2
+#define PID_VOL_INDEX 			3
+#define PID_PERIOD_UP_INDEX 	4
+#define PID_PERIOD_DOWN_INDEX 	5
 
-#define CUR_2A5_CNT 	184
+#define CUR_2A5_CNT 	180
 #define CUR_3A5_CNT 	191
 
 typedef enum
@@ -20,15 +22,15 @@ typedef enum
 	CUR_3A5,
 	CUR_3A5_UP
 }CUR_STA_t;
-const float ( *p4a )[4];
+const float ( *p4a )[6];
 
 static uint8_t overload_flag = 0;
-static void pwm_pid_setting(inc_pid_controller_t pMyPID, const float (*p)[4])
+static void pwm_pid_setting(inc_pid_controller_t pMyPID, const float (*p)[6])
 {
 	pMyPID = inc_pid_controller_create( *( *p + PID_P_INDEX ), *( *p + PID_I_INDEX ), *( *p + PID_D_INDEX ), 30 );
 	pMyPID->controller.target = *( *p + PID_VOL_INDEX );
-	pMyPID->maximum = TIM1_PERIOD_MIN;	//TIM1_PERIOD_MIN (768UL) --> 83.3KHz 640/0.833 = 768,作用：加大功率！
-	pMyPID->minimum = TIM1_PERIOD_MAX;	//TIM1_PERIOD_MAX (727UL) //88KHz 640/0.88 = 727，作用，减小功率！
+	pMyPID->maximum = *( *p + PID_PERIOD_DOWN_INDEX ); //TIM1_PERIOD_MIN;	//TIM1_PERIOD_MIN (768UL) --> 83.3KHz 640/0.833 = 768,作用：加大功率！
+	pMyPID->minimum = *( *p + PID_PERIOD_UP_INDEX );  //TIM1_PERIOD_MAX;	//TIM1_PERIOD_MAX (727UL) //88KHz 640/0.88 = 727，作用，减小功率！
 	pMyPID->controller.enable = 1;
 }
 static void ov_judge(uint16_t *ovflag) //when occour overload.
@@ -46,49 +48,66 @@ static void ov_judge(uint16_t *ovflag) //when occour overload.
 	
 	switch(mode)
 	{
-		case 0:
+		case 0: //首次进入
+			
 			if( ovcnt == 1 ) //first overload
 			{
 				mode = 1;
 				xTimeLast = xTimeNow;
 				overload_flag = 1;
-				//printf("case0if\r\n");
 			}
 			break;
-		case 1:
 			
-			if( xTimeBetween > 120 && ovcnt > 5 ) // occour 2 times ov in 0.1 second 
+		case 1:
+			//弟二次进入，大于0。12秒钟有2次以上，则为有效，跳到模式2
+			if( xTimeBetween > 30 && ovcnt >= 4 ) // occour 2 times ov in 0.1 second 
 			{
 				mode = 2;
 				xTimeLast = xTimeNow;
-				//printf("case1 if > 120\r\n");
 			}
+			//第二次进入时，1秒钟没发生过2次以上中断，则为误触发，模式为3，准备复位
 			else if( xTimeBetween > 1000) 			// in 1 second still not occour ov, reset flag.
 			{
 				mode = 3;
-				//printf("case1 if > 1000\r\n");
-				
 			}
 			break;
+			
 		case 2:
-			if( xTimeBetween < 2000) 				//keep 2second
+			//2秒内设定pwm最大功率输出，即保持2秒钟的最大功率输出
+			if( xTimeBetween < 1000 ) 				//keep 2second
+			{
+				pwm_set_85KHz();
+			}
+			else if( xTimeBetween < 2000 ) 				//keep 2second
+			{
+				pwm_set_84KHz();
+			}
+			else if( xTimeBetween < 10000 )
 			{
 				pwm_set_83KHz();
-				//printf("xTime = %d\r\n", xTimeNow);
 			}
+			else if( xTimeBetween < 60000 )
+			{
+				if(htim1.State == HAL_TIM_STATE_READY)
+				{
+					htim1.Instance->ARR = TIM1_PERIOD_MIN-1;
+					htim1.Instance->CCR1 = htim1.Instance->ARR / 2;
+				}
+			}
+			//2秒后，进到模式3，准备复位
 			else 									//after keep 2 seconds
 			{
 				mode = 3;
-				//printf("case 2 mode = 3;\r\n");
 			}
 			break;
+			
 		case 3:
 			overload_flag = 0;
 			mode = 0;
 			ovcnt = 0;
 			*ovflag = 0;
-		//printf("Between = %d\r\n", xTimeBetween);
 			break;
+		
 		default:
 			break;
 	}
