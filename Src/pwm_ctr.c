@@ -1,10 +1,11 @@
 #include "pwm_ctr.h"
 #include "stdio.h"
+#define CRT_CNT 	20
 const float array[][6] = 
 {
-	{ 0.175, 0.125, 0.0, 50.0  , TIM1_PERIOD_MAX,       TIM1_PERIOD_85KHz    }, //@2.5A 50V 
-	{ 0.235, 0.240, 0.0, 63.0  , TIM1_PERIOD_85KHz + 2, TIM1_PERIOD_MIN - 2  }, //@3.5A 63V
-	{ 0.045, 0.025, 0.0, 82.0 , TIM1_PERIOD_MIN - 6, TIM1_PERIOD_MIN   }, //@4.5A 80V 5A sure overload!
+	{ 0.175, 0.125, 0.0, 50.0  , TIM1_PERIOD_MAX,           TIM1_PERIOD_85KHz    }, //@2.5A 50V 
+	{ 0.235, 0.240, 0.0, 63.0  , TIM1_PERIOD_85KHz + 2,     TIM1_PERIOD_MIN - 2  }, //@3.5A 63V
+	{ 0.045, 0.025, 0.0, 82.0  , TIM1_PERIOD_MIN - CRT_CNT, TIM1_PERIOD_MIN      }, //@4.5A 80V 5A sure overload!
 };
 #define PID_P_INDEX 			0
 #define PID_I_INDEX 			1
@@ -76,21 +77,13 @@ static void ov_judge(uint16_t *ovflag) //when occour overload.
 			//2秒内设定pwm最大功率输出，即保持2秒钟的最大功率输出
 			if( xTimeBetween < 1000 ) 				//keep 2second
 			{
-				pwm_set_85KHz();
-			}
-			else if( xTimeBetween < 2000 ) 				//keep 2second
-			{
 				pwm_set_84KHz();
-			}
-			else if( xTimeBetween < 10000 )
-			{
-				pwm_set_83KHz();
 			}
 			else if( xTimeBetween < 600000 )
 			{
 				if(htim1.State == HAL_TIM_STATE_READY)
 				{
-					htim1.Instance->ARR = TIM1_PERIOD_MIN-6;
+					htim1.Instance->ARR = TIM1_PERIOD_MIN - CRT_CNT;
 					htim1.Instance->CCR1 = htim1.Instance->ARR / 2;
 				}
 			}
