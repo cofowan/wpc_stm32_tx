@@ -288,10 +288,10 @@ __STATIC_INLINE  float pwm_get_freq(void)
 //#define TARGETVOL   ( 70.0f )
 /*****/
 /*** 80V @4.5A ***/
-#define MYP			( 0.045f )
-#define MYI			( 0.025f )
-#define MYD			( 0.00f )
-#define TARGETVOL   ( 80.0f )
+//#define MYP			( 0.045f )
+//#define MYI			( 0.025f )
+//#define MYD			( 0.00f )
+//#define TARGETVOL   ( 80.0f )
 /*****/
 /*	4.5A以上切换时肯定会产生中断信号，当接收到中断信号时，
 	1：	首先将频率设定为84K,然后保持2秒钟，
@@ -312,10 +312,10 @@ __STATIC_INLINE  float pwm_get_freq(void)
 */
 /* USER CODE END Private defines */
 /*** 50V @2.5A 1.84V ***/
-//#define MYP			( 0.175 )
-//#define MYI			( 0.125f )
-//#define MYD			( 0.00f )
-//#define TARGETVOL   ( 50.0f )
+#define MYP			( 0.175 )
+#define MYI			( 0.125f )
+#define MYD			( 0.00f )
+#define TARGETVOL   ( 50.0f )
 /*****/
 //4.0A = 1.95V
 //3.5A = 1.913V

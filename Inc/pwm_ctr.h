@@ -31,6 +31,8 @@ extern "C" {
 #include "main.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "inc_pid_controller.h"
+void pwm_ctr_handler( vol_cur_t *pDat, inc_pid_controller_t pMyPID);
 /*****/
 /*	4.5A以上切换时肯定会产生中断信号，当接收到中断信号时，
 	1：	首先将频率设定为84K,然后保持2秒钟，

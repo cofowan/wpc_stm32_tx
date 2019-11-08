@@ -200,6 +200,7 @@ uint8_t uart2_arr = 0;
 inc_pid_controller_t pMyPID = NULL;
 #include "FreeRTOS_CLI.h"
 #include "serial.h"
+#include "pwm_ctr.h"
 vol_cur_t *pData = NULL;
 
 /* USER CODE END 0 */
@@ -586,7 +587,7 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN 5 */
 	uint32_t val = 0;
 	const TickType_t xPeriod = pdMS_TO_TICKS( 75 );
-	float f = 0.0;
+//	float f = 0.0;
 	vTaskDelay(500); //延时500ms才打开pwm
 	pwm_set_start();
 	
@@ -599,12 +600,8 @@ void StartDefaultTask(void const * argument)
 	  {
 		  if( pData != NULL )
 		  {
-				f = pData->data.vol / ADC_REF;
-				if( pMyPID->controller.update(pMyPID,f) == RT_EOK ) //成功读取调用更新
-				{
-					pwm_set_update(pMyPID->controller.output);
-				}
-				pData = NULL;
+			  pwm_ctr_handler( pData, pMyPID ); //调用相关处理
+			  pData = NULL;
 		 }
 	  }
 	  else //时间溢出
