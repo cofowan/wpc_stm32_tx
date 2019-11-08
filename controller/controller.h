@@ -14,7 +14,7 @@
 #include "cmsis_os.h"
 #include "FreeRTOSConfig.h"
 #include "task.h"
-
+#include "stdlib.h"
 //#include <rtthread.h>
 /* RT-Thread error code definitions */
 #define RT_EOK                          0               /**< There is no error */

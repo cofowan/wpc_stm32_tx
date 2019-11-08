@@ -32,6 +32,37 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+/* USER CODE END Includes */
+
+/* Exported types ------------------------------------------------------------*/
+/* USER CODE BEGIN ET */
+
+/* USER CODE END ET */
+
+/* Exported constants --------------------------------------------------------*/
+/* USER CODE BEGIN EC */
+
+/* USER CODE END EC */
+
+/* Exported macro ------------------------------------------------------------*/
+/* USER CODE BEGIN EM */
+
+/* USER CODE END EM */
+
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
+/* Exported functions prototypes ---------------------------------------------*/
+void Error_Handler(void);
+
+/* USER CODE BEGIN EFP */
+
+/* USER CODE END EFP */
+
+/* Private defines -----------------------------------------------------------*/
+#define LED_BLUE_Pin GPIO_PIN_1
+#define LED_BLUE_GPIO_Port GPIOB
+/* USER CODE BEGIN Private defines */
 #include"stdlib.h"
 typedef struct
 {
@@ -50,11 +81,11 @@ typedef struct
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 #include"string.h"
-#define TIM1_PERIOD_MIN (768UL) //83.3KHz 640/0.833 = 768
-#define TIM1_PERIOD_MAX (727UL) //88KHz 640/0.88 = 727
+#define TIM1_PERIOD_MIN (865UL) //83.2KHz 720/0.832 = 865
+#define TIM1_PERIOD_MAX (818UL) //88KHz 720/0.88 = 816
 #define TIM1_PERIOD_STEP (1UL)
-#define TIM1_PERIOD_85KHz (753UL) //85KHz 640/0.85 = 753
-#define TIM1_PERIOD_84KHz (761UL) //84KHz 640/0.84 = 761
+#define TIM1_PERIOD_85KHz (847UL) //85KHz 720/0.85 = 847
+#define TIM1_PERIOD_84KHz (857UL) //84KHz 720/0.84 = 857
 
 #define RES_DWON 	( 30.0f )
 #define RES_UP 		( 1000.0f )
@@ -327,6 +358,7 @@ __STATIC_INLINE  float pwm_get_freq(void)
 //0.5A = 1.69V
 //0.0A = 1.65V
 /* USER CODE END Private defines */
+
 #ifdef __cplusplus
 }
 #endif

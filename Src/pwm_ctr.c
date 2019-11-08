@@ -4,7 +4,7 @@ const float array[][6] =
 {
 	{ 0.175, 0.125, 0.0, 50.0  , TIM1_PERIOD_MAX,       TIM1_PERIOD_85KHz    }, //@2.5A 50V 
 	{ 0.235, 0.240, 0.0, 63.0  , TIM1_PERIOD_85KHz + 2, TIM1_PERIOD_MIN - 2  }, //@3.5A 63V
-	{ 0.045, 0.025, 0.0, 100.0 , TIM1_PERIOD_85KHz + 13, TIM1_PERIOD_MIN + 2  }, //@4.5A 80V 5A sure overload!
+	{ 0.045, 0.025, 0.0, 82.0 , TIM1_PERIOD_MIN - 6, TIM1_PERIOD_MIN   }, //@4.5A 80V 5A sure overload!
 };
 #define PID_P_INDEX 			0
 #define PID_I_INDEX 			1
@@ -13,8 +13,8 @@ const float array[][6] =
 #define PID_PERIOD_UP_INDEX 	4
 #define PID_PERIOD_DOWN_INDEX 	5
 
-#define CUR_2A5_CNT 	180
-#define CUR_3A5_CNT 	191
+#define CUR_2A5_CNT 	175
+#define CUR_3A5_CNT 	183
 
 typedef enum
 {
@@ -86,11 +86,11 @@ static void ov_judge(uint16_t *ovflag) //when occour overload.
 			{
 				pwm_set_83KHz();
 			}
-			else if( xTimeBetween < 60000 )
+			else if( xTimeBetween < 600000 )
 			{
 				if(htim1.State == HAL_TIM_STATE_READY)
 				{
-					htim1.Instance->ARR = TIM1_PERIOD_MIN-1;
+					htim1.Instance->ARR = TIM1_PERIOD_MIN-6;
 					htim1.Instance->CCR1 = htim1.Instance->ARR / 2;
 				}
 			}
